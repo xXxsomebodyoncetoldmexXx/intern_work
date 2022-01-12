@@ -9,6 +9,7 @@ import email.utils
 from pathlib import Path
 from selectors import SelectSelector
 from http import HTTPStatus
+from platform import pyhon_version as pyver
 
 # Dev
 from pprint import pprint
@@ -100,6 +101,7 @@ class SimpleServer:
     self.request_queue_size = queue_size
     self.poll_timeout = poll_timeout
     self.__header_buffer = dict()
+    self.header = dict()
     self._bind()
 
   def _bind(self):
@@ -108,6 +110,13 @@ class SimpleServer:
     self.sock.listen(self.request_queue_size)
     logging.info(f"Server is listening on http://{self.host}:{self.port}")
     self.sock.setblocking(False)
+
+  def _server_version(self):
+    return f"MySimpleHTTP/1.0 Python/{pyver()}"
+
+  def _get_time(self):
+    t = time.time()
+    return email.utils.formatdate(t, usegmt=True)
 
   def _get_resp(self, stream):
     resp = list()
@@ -122,7 +131,7 @@ class SimpleServer:
 
   def _do_resp(self, sock, data):
     sock.sendall(data)
-    self.__header_buffer = dict()
+    self.header = {}
 
   def _process_params(self, uri):
     path, query = uri.split('?', 1)
@@ -142,31 +151,38 @@ class SimpleServer:
 
   def _process_header(self, stream):
     data = [s.decode() for s in self._get_resp(stream).split(b'\n')]
-    header = dict()
     for line in data:
       mo = _HeaderRe.match(line)
       if mo:
-        header[mo.group("Key")] = mo.group("Value")
+        self.header[mo.group("Key")] = mo.group("Value")
       else:
         mo = _HTTPRe.match(line)
         if mo:
-          header["Request-Type"] = mo.group("ReqType")
-          header["URI"] = mo.group("URI")
-          header["HTTP-Version"] = mo.group("HTTPVersion")
-          if "?" in header["URI"]:
-            header["File-Path"], header["Params"] = self._process_params(
-                header["URI"])
-    return header
+          self.header["Request-Type"] = mo.group("ReqType")
+          self.header["URI"] = mo.group("URI")
+          self.header["HTTP-Version"] = mo.group("HTTPVersion")
+          if "?" in self.header["URI"]:
+            self.header["File-Path"], self.header["Params"] = self._process_params(
+                self.header["URI"])
 
   def _process_body(self, stream):
     return self._get_resp(stream)
+
+  def _make_resp(self, code):
+    return f"HTTP/1.0 {code} {responses[code][0]}{CRLF}"
 
   def _set_header(self, key, value):
     self.__header_buffer[key] = value
 
   def __translate_header(self):
-    # TODO: dict -> string
-    pass
+    h = list()
+    for key, value in self.__header_buffer.items():
+      line = f"{key}: {value}" + CRLF
+      h.append(line.encode('latin-1', 'strict'))
+
+    # Clear buffer
+    self.__header_buffer = {}
+    return CRLF.join(h).encode() + bCRLF
 
   def _err(self, code, msg=None):
     try:
@@ -175,7 +191,12 @@ class SimpleServer:
       shortmsg, longmsg = '???', '???'
     if not msg:
       msg = shortmsg
-    # TODO: build body
+    self._set_header("Connection", "close")
+
+
+    self._set_header("Content-Type", "text/html;charset=utf-8")
+    self._set_header("Connection", "close")
+    payload = self._make_resp(code)
 
   def __exit__(self):
     try:
@@ -189,13 +210,13 @@ class SimpleServer:
     stream = req.makefile("rb")
     try:
       logging.info(f"New connection from {addr}")
-      header = self._process_header(stream)
-      if header["Request-Type"] in ("POST", "PUT"):
+      self._process_header(stream)
+      if self.header["Request-Type"] in ("POST", "PUT"):
         body = self._process_body(stream)
         with open("upload.data", "wb") as f:
           f.write(body)
 
-      self.hander_resp(req, header)
+      self.hander_resp(req)
     finally:
       stream.close()
       req.close()
@@ -221,9 +242,10 @@ class SimpleServer:
       return guess
     return 'application/octet-stream'
 
-  def hander_resp(self, sock, req_header):
-    data = b''
-    path = self.translate_path(req_header["File-Path"])
+  def hander_resp(self, sock):
+    self._set_header("Server", self._server_version)
+    self._set_header("Date", self._get_time)
+    path = self.translate_path(self.header["File-Path"])
     if not path:
       return self._err(404)
 
