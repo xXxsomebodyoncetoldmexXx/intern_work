@@ -410,7 +410,7 @@ class SimpleServer:
 
 
 def main():
-  SimpleServer().start()
+  SimpleServer(host="0.0.0.0").start()
 
 
 if __name__ == "__main__":
