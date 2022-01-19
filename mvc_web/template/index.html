@@ -1,0 +1,38 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
+<html>
+  <head>
+    <meta http-equiv="Content-Type" content="text/html;charset=utf-8" />
+    <link rel="stylesheet" href="css/index.css" />
+    <script
+      src="https://cdnjs.cloudflare.com/ajax/libs/axios/0.24.0/axios.min.js"
+      integrity="sha512-u9akINsQsAkG9xjc1cnGF4zw5TFDwkxuc9vUp5dltDWYCSmyd0meygbvgXrlc/z7/o4a19Fb5V0OUE58J7dcyw=="
+      crossorigin="anonymous"
+      referrerpolicy="no-referrer"
+    ></script>
+    <script type="text/javascript" src="/main.js"></script>
+    <title>Servers Managed webapp</title>
+  </head>
+  <body>
+    <h1><a href="/">Welcome {username}!</a></h1>
+    <hr />
+    <h2>Server in control:</h2>
+    {servers}
+    <form>
+      <button type="submit" class="btn" name="get-result" value="*">
+        Scan all
+      </button>
+    </form>
+    <hr />
+    <h2>Add new server</h2>
+    <form action="/" method="post">
+      <h3>Server ip:</h3>
+      <input type="text" name="ip" />
+      <input type="submit" />
+    </form>
+    <br />
+    <h3>Upload file</h3>
+    <input type="file" name="upload" id="uploadFile" />
+    <button type="button" onclick="uploadFile()">Send</button>
+    {result} {other_user}
+  </body>
+</html>

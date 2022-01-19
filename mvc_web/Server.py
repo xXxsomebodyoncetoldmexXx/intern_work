@@ -1,89 +1,38 @@
-import html
 import selectors
 import socket
 import logging
 import re
 import sys
-import mimetypes
 import time
-import json
 import email.utils
-from base64 import b64decode
 from pathlib import Path
-from selectors import SelectSelector
 from http import HTTPStatus
 from platform import python_version as pyver
-
-# Dev
-from pprint import pprint
-import json
+from Utils import responses, get_err_msg, guess_file_type, unquote
+from template import Views
 
 logging.basicConfig(
-    format='%(asctime)s - [%(levelname)s] - %(module)s - %(message)s', level=logging.INFO)
+    format='%(asctime)s - [%(levelname)s] - %(module)s - %(message)s', level=logging.DEBUG)
 
 CRLF = '\r\n'
 bCRLF = b'\r\n'
-_MAX_LINE = 4096
+_MAX_LINE = 65537
 
 _HeaderRe = re.compile(r"(?P<Key>.+): (?P<Value>.+)")
 _HTTPRe = re.compile(r"(?P<ReqType>.*) (?P<URI>.*) HTTP/(?P<HTTPVersion>.*)")
-_asciire = re.compile('([\x00-\x7f]+)')
-_hex_digits = '0123456789ABCDEFabcdef'
-_hex_to_bytes = {(a + b).encode(): bytes.fromhex(a + b)
-                 for a in _hex_digits for b in _hex_digits}
-
-
-def unquote_to_bytes(s):
-  if not s:
-    return b''
-  if isinstance(s, str):
-    s = s.encode()
-  bits = s.split(b'%')
-  if len(bits) == 1:
-    return s
-  res = [bits[0]]
-  for part in bits[1:]:
-    if part[:2] in _hex_to_bytes:
-      res.append(_hex_to_bytes[part[:2]])
-      res.append(part[2:])
-    else:
-      res.append(b'%' + part)
-  return b''.join(res)
-
-
-def unquote(s):
-  if '%' not in s:
-    return s
-  bits = _asciire.split(s)
-  res = [bits[0]]
-  for i in range(1, len(bits), 2):
-    res.append(unquote_to_bytes(bits[i]).decode('utf-8', 'replace'))
-    res.append(bits[i + 1])
-  return ''.join(res)
 
 
 class SimpleServer:
 
-  extensions_map = {
-      '.gz': 'application/gzip',
-      '.Z': 'application/octet-stream',
-      '.bz2': 'application/x-bzip2',
-      '.xz': 'application/x-xz',
-  }
-
-  responses = {
-      v: (v.phrase, v.description)
-      for v in HTTPStatus.__members__.values()
-  }
-
   support_request_type = ("GET", "POST", "HEAD")
 
-  def __init__(self, host="127.0.0.1", port=8080, queue_size=5, poll_timeout=0.1):
+  def __init__(self, host="127.0.0.1", port=8080, queue_size=10, poll_timeout=0.5):
     self.host = host
     self.port = port
     self.request_queue_size = queue_size
     self.poll_timeout = poll_timeout
     self.__header_buffer = {}
+    self.__cookie_buffer = {}
     self.header = {}
     self.__init_resp = b""
     self.body = b""
@@ -139,7 +88,7 @@ class SimpleServer:
     path, query = uri.split('?', 1)
     if not query[1]:
       return (path, {}, '')
-    query, fragment = query.split('#', 1)[0]
+    query, *fragment = query.split('#', 1)
     params = dict()
     if query:
       for name_value in query.split('&'):
@@ -173,12 +122,13 @@ class SimpleServer:
 
   def _process_body(self, raw):
     if raw:
-      return raw[0].decode()
+      return raw[0].strip().decode()
     return ''
 
   def __clean_up(self):
     self.__init_resp = b""
     self.__header_buffer = {}
+    self.__cookie_buffer = {}
     self.header = {}
     self.body = b""
     self.c_stream.close()
@@ -195,7 +145,15 @@ class SimpleServer:
     for key, value in self.__header_buffer.items():
       line = f"{key}: {value}"
       h.append(line.encode('latin-1', 'strict'))
+    h.extend(self.__translate_cookie())
     return bCRLF.join(h) + bCRLF + bCRLF
+
+  def __translate_cookie(self):
+    c = list()
+    for key, value in self.__cookie_buffer.items():
+      line = f"Set-Cookie: {key}={value}"
+      c.append(line.encode('latin-1', 'strict'))
+    return c
 
   def __exit__(self):
     try:
@@ -223,14 +181,20 @@ class SimpleServer:
     return decorator
 
   def set_resp_code(self, code):
-    self.__init_resp = f"HTTP/1.0 {code} {self.responses[code][0]}{CRLF}".encode(
+    self.__init_resp = f"HTTP/1.0 {code} {responses[code][0]}{CRLF}".encode(
     )
 
   def set_header(self, key, value):
     self.__header_buffer[key] = value
 
-  def redirect(self, path):
-    self.set_resp_code(HTTPStatus.MOVED_PERMANENTLY)
+  def set_cookie(self, key, value):
+    self.__cookie_buffer[key] = value
+
+  def redirect(self, path, is_post=False):
+    if is_post:
+      self.set_resp_code(HTTPStatus.FOUND)
+    else:
+      self.set_resp_code(HTTPStatus.TEMPORARY_REDIRECT)
     self.set_header("Location", path)
 
   def hander_req(self):
@@ -238,43 +202,25 @@ class SimpleServer:
       self.c_sock, addr = self.sock.accept()
       self.c_stream = self.c_sock.makefile("rb")
       logging.debug(f"New connection from {addr}")
-      raw_header, *raw_body = self._get_resp().split(b"\n\n")
+      raw_header, *raw_body = self._get_resp().split(b"\n\n", 1)
       if len(raw_header):
         self._process_header(raw_header)
-        self.body = self._process_body(raw_body)
         logging.debug(self.header)
         logging.info(
             f"{addr[0]} - {self.header['Request-Type']} - {self.header['URI']}")
         if self.header["Request-Type"] in ("POST", "PUT"):
-          self.body = self._process_body()
+          self.rbody = self._process_body(raw_body)
 
         # Run middlewares
         for func in self.middlewares:
-          cont = func(self)
-          if not cont:
+          end_resp = func(self)
+          if end_resp:
             return self._do_resp()
 
         if self.header.get("Connection", "") != "close":
           self.hander_resp()
     finally:
       self.__clean_up()
-
-  def check_parent(self, path):
-    path = path.lstrip('/').split('/')
-    path = Path(*path)
-    parent = []
-    for part in list(path.parents)[:-1]:
-      parent.append(part if part.exists() else None)
-    return (path, parent)
-
-  def guess_file_type(self, path):
-    ext = path.suffix
-    if ext in self.extensions_map:
-      return self.extensions_map[ext]
-    guess, _ = mimetypes.guess_type(path)
-    if guess:
-      return guess
-    return 'application/octet-stream'
 
   def hander_resp(self):
     self.set_header("Server", self._server_version())
@@ -287,6 +233,7 @@ class SimpleServer:
           f"Try to match {route['route']} to path {self.header['File-Path']}")
       mo = route["route"].match(self.header["File-Path"])
       if mo and self.header["Request-Type"] in route["methods"]:
+        self.set_resp_code(HTTPStatus.OK)  # default resp
         if route["argc"] > 1:
           route["func"](self, mo.groups())
         else:
@@ -295,10 +242,11 @@ class SimpleServer:
 
     # default route
     self.set_resp_code(HTTPStatus.NOT_FOUND)
+    self.body = Views.render("error.html", get_err_msg(HTTPStatus.NOT_FOUND))
     self._do_resp()
 
   def serve_forever(self):
-    with SelectSelector() as selector:
+    with selectors.SelectSelector() as selector:
       selector.register(self, selectors.EVENT_READ)
       try:
         while True:
@@ -329,7 +277,7 @@ def main():
     file = Path(request.header["File-Path"].lstrip("/"))
     if file.exists() and file.is_file() and file.suffix == ".js":
       request.set_resp_code(HTTPStatus.OK)
-      request.set_header("Content-type", request.guess_file_type(file))
+      request.set_header("Content-type", guess_file_type(file))
       with open(file, "rb") as f:
         request.body = f.read()
       return False
