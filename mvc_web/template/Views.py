@@ -10,6 +10,10 @@ def _fix_eol(msg):
   return re.sub(r'(?:\r\n|\n|\r(?!\n))', CRLF, msg)
 
 
+def _fix_html(msg):
+  return re.sub(r'(?:\r\n|\n|\r(?!\n))', '<br />', msg)
+
+
 def read_file(path):
   data = ''
   with open(path, "r") as f:
@@ -39,9 +43,9 @@ def result_to_html(scan_result):
   result = ["<h2>Scan result</h2>"]
   if isinstance(scan_result, list):
     for r in scan_result:
-      result.append(f"<hr /><p>{_fix_eol(r)}</p>")
+      result.append(f"<hr /><p>{_fix_html(r)}</p>")
   else:
-    result.append(f"<hr /><p>{_fix_eol(scan_result)}</p>")
+    result.append(f"<hr /><p>{_fix_html(scan_result)}</p>")
   return CRLF.join(result) + CRLF
 
 

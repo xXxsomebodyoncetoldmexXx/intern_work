@@ -12,11 +12,11 @@ from Utils import responses, get_err_msg, guess_file_type, unquote
 from template import Views
 
 logging.basicConfig(
-    format='%(asctime)s - [%(levelname)s] - %(module)s - %(message)s', level=logging.DEBUG)
+    format='%(asctime)s - [%(levelname)s] - %(module)s - %(message)s', level=logging.INFO)
 
 CRLF = '\r\n'
 bCRLF = b'\r\n'
-_MAX_LINE = 65537
+_MAX_DATA = 65537
 
 _HeaderRe = re.compile(r"(?P<Key>.+): (?P<Value>.+)")
 _HTTPRe = re.compile(r"(?P<ReqType>.*) (?P<URI>.*) HTTP/(?P<HTTPVersion>.*)")
@@ -37,7 +37,6 @@ class SimpleServer:
     self.__init_resp = b""
     self.body = b""
     self.c_sock = None
-    self.c_stream = None
     self.middlewares = []
     self.routes = []
     self._bind()
@@ -47,7 +46,6 @@ class SimpleServer:
     self.sock.bind((self.host, self.port))
     self.sock.listen(self.request_queue_size)
     logging.info(f"Server is listening on http://{self.host}:{self.port}")
-    self.sock.setblocking(False)
 
   def _server_version(self):
     return f"MySimpleHTTP/1.0 Python/{pyver()}"
@@ -57,19 +55,9 @@ class SimpleServer:
     return email.utils.formatdate(t, usegmt=True)
 
   def _get_resp(self):
-    resp = []
-    blank_count = 0
-    while True:
-      line = self.c_stream.readline(_MAX_LINE).strip(b" \r\t\n")
-      logging.debug(f"recv {line}")
-      if not line:
-        blank_count += 1
-      elif line and blank_count:
-        blank_count = 0
-      if blank_count == 2:
-        break
-      resp.append(line)
-    return b'\n'.join(resp)
+    data = self.c_sock.recv(_MAX_DATA).strip(b" \r\t\n")
+    logging.debug(f"recv lines {data}")
+    return data.split(b"\r\n\r\n")
 
   def _do_resp(self):
     if isinstance(self.body, str):
@@ -103,7 +91,7 @@ class SimpleServer:
     return (path, params, fragment)
 
   def _process_header(self, raw):
-    data = [s.decode() for s in raw.split(b'\n')]
+    data = [s.decode() for s in raw.split(b'\r\n')]
     for line in data:
       mo = _HeaderRe.match(line)
       if mo:
@@ -131,13 +119,11 @@ class SimpleServer:
     self.__cookie_buffer = {}
     self.header = {}
     self.body = b""
-    self.c_stream.close()
     try:
       self.c_sock.shutdown(socket.SHUT_RDWR)
+      self.c_sock.close()
     except OSError:
       pass
-    self.c_sock.close()
-    self.c_stream = None
     self.c_sock = None
 
   def __translate_header(self):
@@ -200,9 +186,8 @@ class SimpleServer:
   def hander_req(self):
     try:
       self.c_sock, addr = self.sock.accept()
-      self.c_stream = self.c_sock.makefile("rb")
       logging.debug(f"New connection from {addr}")
-      raw_header, *raw_body = self._get_resp().split(b"\n\n", 1)
+      raw_header, *raw_body = self._get_resp()
       if len(raw_header):
         self._process_header(raw_header)
         logging.debug(self.header)
@@ -233,6 +218,7 @@ class SimpleServer:
           f"Try to match {route['route']} to path {self.header['File-Path']}")
       mo = route["route"].match(self.header["File-Path"])
       if mo and self.header["Request-Type"] in route["methods"]:
+        logging.debug("MATCH")
         self.set_resp_code(HTTPStatus.OK)  # default resp
         if route["argc"] > 1:
           route["func"](self, mo.groups())
@@ -246,15 +232,11 @@ class SimpleServer:
     self._do_resp()
 
   def serve_forever(self):
-    with selectors.SelectSelector() as selector:
-      selector.register(self, selectors.EVENT_READ)
-      try:
-        while True:
-          ready = selector.select(self.poll_timeout)
-          if ready:
-            self.hander_req()
-      finally:
-        self.__exit__()
+    try:
+      while True:
+        self.hander_req()
+    finally:
+      self.__exit__()
 
   def start(self):
     try:
@@ -263,10 +245,6 @@ class SimpleServer:
     except KeyboardInterrupt:
       print("\nKeyboard interrupt received, exiting.")
       sys.exit(0)
-
-  def fileno(self):
-    # For selector
-    return self.sock.fileno()
 
 
 def main():
@@ -280,8 +258,7 @@ def main():
       request.set_header("Content-type", guess_file_type(file))
       with open(file, "rb") as f:
         request.body = f.read()
-      return False
-    return True
+      return True
 
   @app.route("/")
   def test(request):

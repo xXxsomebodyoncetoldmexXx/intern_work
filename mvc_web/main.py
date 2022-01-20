@@ -91,10 +91,10 @@ def main():
       request.body = Views.render("login.html", {"error-msg": ""})
     else:
       login_info = request.rbody
-
       username = login_info.get("username", "")
       password = login_info.get("password", "")
       result = models["Users"].get_user(username, password)
+      print("LOGIN", login_info, result)
       if result:
         userid, name, passwd, _ = result[0]
         h = sha256(f"{userid}&{name}&{passwd}".encode()).hexdigest()
@@ -162,15 +162,5 @@ if __name__ == "__main__":
   # models["Users"].insert_user("test", "1234")
   # models["Users"]._set_admin("admin", "root")
 
-  # models["Server"].insert_server(
-  #     '1', '192.168.1.1', b64encode(scan_host('192.168.1.1')).decode())
-  # models["Server"].insert_server(
-  #     '1', '192.168.1.188', b64encode(scan_host('192.168.1.188')).decode())
-  # models["Server"].insert_server(
-  #     '2', '10.10.5.2', b64encode(scan_host('10.10.5.2')).decode())
-  # models["Server"].insert_server(
-  #     '3', '10.10.18.7', b64encode(scan_host('10.10.18.7')).decode())
-  # models["Server"].insert_server(
-  #     '3', '10.10.18.9', b64encode(scan_host('10.10.18.9')).decode())
   main()
   app.start()
