@@ -1,0 +1,64 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
+<html>
+  <head>
+    <meta http-equiv="Content-Type" content="text/html;charset=utf-8" />
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.0/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css" />
+    <link rel="stylesheet" href="css/base.css" />
+    <script src="/main.js"></script>
+    <title>School</title>
+  </head>
+  <body>
+    <div style="padding-top:20px;margin-top:30px;height:1500px;">
+    <ul>
+      <li><a href="/">Home</a></li>
+      <li><a href="/user">User</a></li>
+      <li><a class="active" href="/problem">Problem</a></li>
+      <li><a href="/challenge">Challenge</a></li>
+      <li><a href="/message">Message</a></li>
+      <li style="float: right"><a href="/logout">Logout</a></li>
+    </ul>
+    <h1>List of problem</h1>
+    <hr />
+    <div class="container" style="max-width: 2400px">
+      <table class="table">
+        <thead>
+          <tr>
+            <th scope="col" style="width: 5%">Problem id</th>
+            <th scope="col" style="width: 85%">Problem name</th>
+            <th scope="col" style="width: 5%">Content</th>
+            <th scope="col" style="width: 5%">#</th>
+          </tr>
+        </thead>
+        <tbody>
+          {problem-table-content}
+        </tbody>
+      </table>
+    </div>
+    {problem-add-update-form}
+    <hr />
+    <h1>List of answer</h1>
+    <hr />
+    <div class="container" style="max-width: 2400px">
+      <table class="table">
+        <thead>
+          <tr>
+            <th scope="col" style="width: 5%">Answer id</th>
+            <th scope="col" style="width: 40%">User name</th>
+            <th scope="col" style="width: 45%">Problem name</th>
+            <th scope="col" style="width: 5%">Content</th>
+            <th scope="col" style="width: 5%">#</th>
+          </tr>
+        </thead>
+        <tbody>
+          {answer-table-content}
+        </tbody>
+      </table>
+    </div>
+    {answer-add-update-form}
+    <hr />
+    <div class="response">
+      <h3 id="error-msg">{error-msg}</h3>
+    </div>
+  </body>
+</html>
