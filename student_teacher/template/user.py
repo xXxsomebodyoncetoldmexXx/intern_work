@@ -25,57 +25,76 @@ form = """<hr />
 
 
 def parse_options(options):
-  options["error-msg"] = options.get("error-msg", "")
-  options["add-update-form"] = ''
-  options["error"] = ''
-  message_id_control = ''
-  if options["error-msg"]:
-    options["error"] = f'''<hr />
+    options["error-msg"] = options.get("error-msg", "")
+    options["add-update-form"] = ""
+    options["error"] = ""
+    message_id_control = ""
+    if options["error-msg"]:
+        options[
+            "error"
+        ] = f"""<hr />
     <div class="response">
       <h3 id="error-msg">Error: {options["error-msg"]}</h3>
-    </div>'''
+    </div>"""
 
-  if isinstance(options["user-info"], list):
-    options["title"] = "<h1>List of users</h1>"
-    options["show-info"] = ['<div class="container float-left">',
-                            '<form action="/user">',
-                            '<ul class="list-group" style="position: relative;">']
-    for u in options["user-info"]:
-      options["show-info"].append(
-          '<li class="list-group-item"><button type="submit" name="id" value={userid}>{username}</button></li>'.format(**u))
-    options["show-info"].append("</ul></form></div>")
-    options["show-info"] = '\n'.join(options["show-info"])
-  else:
-    if not options["user-info"]:
-      options["title"] = "<h1>User not found</h1>"
-      options["show-info"] = ""
+    if isinstance(options["user-info"], list):
+        options["title"] = "<h1>List of users</h1>"
+        options["show-info"] = [
+            '<div class="container float-left">',
+            '<form action="/user">',
+            '<ul class="list-group" style="position: relative;">',
+        ]
+        for u in options["user-info"]:
+            options["show-info"].append(
+                '<li class="list-group-item"><button type="submit" name="id" value={userid}>{username}</button></li>'.format(
+                    **u
+                )
+            )
+        options["show-info"].append("</ul></form></div>")
+        options["show-info"] = "\n".join(options["show-info"])
     else:
-      u = options["user-info"]
-      options["title"] = "<h1>Show information of user {username}</h1>".format(
-          **u)
-      options["show-info"] = """<div class="card">
+        if not options["user-info"]:
+            options["title"] = "<h1>User not found</h1>"
+            options["show-info"] = ""
+        else:
+            u = options["user-info"]
+            options["title"] = "<h1>Show information of user {username}</h1>".format(
+                **u
+            )
+            options[
+                "show-info"
+            ] = """<div class="card">
       <div class="container">
         <p><b>Full name:</b> {fullname}</p>
         <p><b>Email:</b> {email}</p>
         <p><b>Sdt:</b> {phone}</p>
       </div>
-    </div>""".format(**u)
-    options["add-update-form"] = form
+    </div>""".format(
+                **u
+            )
+        options["add-update-form"] = form
 
-  if options.get("send-message", ""):
-    table_content = []
-    message_id_control = []
-    for m in options["send-message"]:
-      table_content.append("""<tr>
+    if options.get("send-message", ""):
+        table_content = []
+        message_id_control = []
+        for m in options["send-message"]:
+            table_content.append(
+                """<tr>
               <th scope="row">{messageid}</th>
               <td>{content}</td>
               <td><button type='submit' name='deleteid' value={messageid}>delete</button></td>
-            </tr>""".format(**m))
-      message_id_control.append(
-          "<option value={messageid}>{messageid}</option>".format(**m))
-    table_content = '\n'.join(table_content)
-    message_id_control = '\n'.join(message_id_control)
-    options["message-table"] = f"""<hr />
+            </tr>""".format(
+                    **m
+                )
+            )
+            message_id_control.append(
+                "<option value={messageid}>{messageid}</option>".format(**m)
+            )
+        table_content = "\n".join(table_content)
+        message_id_control = "\n".join(message_id_control)
+        options[
+            "message-table"
+        ] = f"""<hr />
     <div class="container" style="max-width: 2400px">
       <form action="/user" method="post">
         <input type='hidden' name='id' value={options["user-info"]["userid"]} />
@@ -94,11 +113,15 @@ def parse_options(options):
         </table>
       </form>
     </div>"""
-  else:
-    options["message-table"] = ''
+    else:
+        options["message-table"] = ""
 
-  if options["add-update-form"]:
-    options["add-update-form"] = options["add-update-form"].format(
-        **{"message-id-control": message_id_control, "userid": options["user-info"]["userid"]})
+    if options["add-update-form"]:
+        options["add-update-form"] = options["add-update-form"].format(
+            **{
+                "message-id-control": message_id_control,
+                "userid": options["user-info"]["userid"],
+            }
+        )
 
-  return options
+    return options
