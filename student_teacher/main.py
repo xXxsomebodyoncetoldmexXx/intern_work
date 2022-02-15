@@ -37,7 +37,6 @@ models = {
 
 
 def parse_user(data):
-    print(data)
     field = [
         "userid",
         "username",
@@ -98,9 +97,23 @@ def get_challenges():
     return challenges
 
 
+def check_challenge(name):
+    if exists_challenge(name):
+        with open(Path(CHALL_PATH, name), "r") as f:
+            content = f.read()
+        return content
+
+
+def exists_challenge(name):
+    challpath = Path(CHALL_PATH, name)
+    if challpath.exists and challpath.is_file():
+        return True
+    return False
+
+
 def save_chall(name, content):
     p = Path(CHALL_PATH, name)
-    with open(p, "w") as f:
+    with open(p, "wb") as f:
         f.write(content)
 
 
@@ -556,8 +569,8 @@ def do_challege(request):
             elif len(content) != 2:
                 args["error-msg"] = "Problem file is empty"
             else:
-                content = content[1]
-                h = h3(f"{answer}&{content}")
+                content = b64decode(content[1])
+                h = h3(f"{answer}&{content.decode()}")
                 if models["Challenge"].get_chall(h):
                     args["error-msg"] = "Challenge already upload"
                 else:
@@ -570,16 +583,15 @@ def do_challege(request):
             if not hash:
                 args["error-msg"] = "Challenge can not be empty"
             else:
-                for c in args["challenge-list"]:
-                    if c["hash"] == hash:
-                        if c["challangeanswer"] == answer:
-                            args["ok-msg"] = "Correct answer"
-                            args["challenge-content"] = b64decode(c["content"]).decode()
-                        else:
-                            args["error-msg"] = "Wrong answer"
-                        break
+                content = check_challenge(answer)
+                if content:
+                    args["ok-msg"] = "Correct answer"
+                    args["challenge-content"] = content
                 else:
-                    args["error-msg"] = "Challenge not found"
+                    if exists_challenge(answer):
+                        args["error-msg"] = "Wrong answer"
+                    else:
+                        args["error-msg"] = "Challenge not found"
 
     request.body = Views.render("challenge.html", args)
 
