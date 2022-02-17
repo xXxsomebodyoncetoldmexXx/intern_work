@@ -1,0 +1,109 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
+<html>
+  <head>
+    <meta http-equiv="Content-Type" content="text/html;charset=utf-8" />
+    <link
+    rel="stylesheet"
+    href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.0/css/bootstrap.min.css"
+    />
+    <link
+    rel="stylesheet"
+    href="https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css"
+    />
+    <link rel="stylesheet" href="css/base.css" />
+    <link rel="stylesheet" href="css/login.css" />
+    <title>School</title>
+  </head>
+  <body>
+    <div style="padding-top:20px;margin-top:30px;height:1500px;">
+    <ul>
+      <li><a class="active" href="/">Home</a></li>
+      <li><a href="/user">User</a></li>
+      <li><a href="/problem">Problem</a></li>
+      <li><a href="/challenge">Challenge</a></li>
+      <li><a href="/message">Message</a></li>
+      <li style="float: right"><a href="/logout">Logout</a></li>
+    </ul>
+    <h1>Welcome {username}!</h1>
+    <hr />
+    <div class="card">
+      <div class="container">
+        <h2 class="text-center">User information</h2>
+        <p><b>Full name:</b> {fullname}</p>
+        <p><b>Email:</b> {email}</p>
+        <p><b>Sdt:</b> {phone}</p>
+      </div>
+    </div>
+    <div class="card">
+      <div class="container">
+        <form action="/" method="post">
+          <div class="form-group" style="margin-top:10px;">
+            <select class="custom-select" name="id">
+              <option value="" disabled selected>Select user to update</option>
+              {admin-adduser-control}
+              <option value={userid}>{username}</option>
+              {admin-otheruser-control}
+            </select>
+          </div>
+          {admin-username-control}
+          <div class="form-group">
+            <input
+              type="text"
+              class="form-control"
+              name="password"
+              placeholder="mật khẩu"
+            />
+          </div>
+          {admin-fullname-control}
+          <div class="form-group">
+            <input
+              type="text"
+              class="form-control"
+              name="email"
+              placeholder="email"
+            />
+          </div>
+          <div class="form-group">
+            <input
+              type="text"
+              class="form-control"
+              name="phone"
+              placeholder="số điện thoại"
+            />
+          </div>
+          <div class="form-group">
+            <button type="submit" class="btn btn-primary btn-block">
+              Submit
+            </button>
+          </div>
+          <br />
+          <div class="response">
+            <h3 id="error-msg">{error-msg-update}</h3>
+          </div>
+        </form>
+      </div>
+    </div>
+    <div class="card">
+      <div class="container">
+        <form action="/" method="post">
+          <h2 class="text-center">Delete user</h2>
+          <div class="form-group">
+            <select class="custom-select" name="delete-id">
+              <option value="" disabled selected>Select user to delete</option>
+              {admin-otheruser-control}
+            </select>
+          </div>
+          <div class="form-group">
+            <button type="submit" class="btn btn-primary btn-block">
+              Submit
+            </button>
+          </div>
+          <br />
+          <div class="response">
+            <h3 id="error-msg">{error-msg-delete}</h3>
+          </div>
+        </form>
+      </div>
+    </div>
+  </body>
+</html>
