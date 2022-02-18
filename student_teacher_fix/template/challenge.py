@@ -91,7 +91,9 @@ def parse_options(options):
         challenge_row_template = challenge_row_template.replace("disabled", "")
 
     for c in options["challenge-list"]:
-        chall_rows.append(challenge_row_template.format(**c))
+        chall_rows.append(
+            challenge_row_template.format(**c, csrf_token=options["csrf_token"])
+        )
         chall_id_list.append(
             "<option value={hash}>{challengename}</option>".format(**c)
         )
@@ -107,13 +109,16 @@ def parse_options(options):
     if options["is_admin"]:
         options["title"] = "Managed challenge"
 
-        options["challenge-add-form"] = add_form
+        options["challenge-add-form"] = add_form.format(
+            csrf_token=options["csrf_token"]
+        )
     else:
         options["title"] = "Challenge list"
         options["challenge-add-form"] = ""
 
         if chall_id_list:
             options["challenge-answer-form"] = answer_form.format(
-                **{"challenge-id-control": chall_id_list}
+                **{"challenge-id-control": chall_id_list},
+                csrf_token=options["csrf_token"]
             )
     return options

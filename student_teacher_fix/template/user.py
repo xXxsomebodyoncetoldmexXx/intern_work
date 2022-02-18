@@ -123,7 +123,8 @@ def parse_options(options):
             **{
                 "message-id-control": message_id_control,
                 "userid": options["user-info"]["userid"],
-            }
+            },
+            csrf_token=options["csrf_token"],
         )
 
     return options

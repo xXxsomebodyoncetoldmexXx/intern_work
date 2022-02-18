@@ -102,7 +102,9 @@ def parse_options(options):
     if options["is_admin"] == 1:
         row_template = row_template.replace("disabled", "")
     for p in options["problem-list"]:
-        problem_table_content.append(row_template.format(**p))
+        problem_table_content.append(
+            row_template.format(**p, csrf_token=options["csrf_token"])
+        )
         problem_id_option.append(
             "<option value={problemid}>{problemname}</option>".format(**p)
         )
@@ -110,12 +112,15 @@ def parse_options(options):
     if options["is_admin"] == 1:
         problem_id_option = "\n".join(problem_id_option)
         options["problem-add-update-form"] = problem_form.format(
-            **{"problem-id-control": problem_id_option}
+            **{"problem-id-control": problem_id_option},
+            csrf_token=options["csrf_token"]
         )
 
     row_template = answer_row
     for a in options["answer-list"]:
-        answer_table_content.append(row_template.format(**a))
+        answer_table_content.append(
+            row_template.format(**a, csrf_token=options["csrf_token"])
+        )
         answer_id_option.append(
             "<option value={answerid}>{answerid}</option>".format(**a)
         )
@@ -131,7 +136,8 @@ def parse_options(options):
             **{
                 "answer-id-control": answer_id_option,
                 "unsolve-id-control": unsolve_id_option,
-            }
+            },
+            csrf_token=options["csrf_token"]
         )
 
     options["answer-table-content"] = "\n".join(answer_table_content)
