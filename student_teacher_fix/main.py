@@ -632,6 +632,8 @@ def do_challege(request):
                     args["error-msg"] = "Challenge already upload"
                 elif name_dangerous(answer):
                     args["error-msg"] = "Challenge file name contain invalid characters"
+                elif exists_challenge(answer):
+                    args["error-msg"] = "Cannot save challenge with that name"
                 else:
                     save_chall(answer, content)
                     models["Challenge"].insert_chall(h, name, hint)
