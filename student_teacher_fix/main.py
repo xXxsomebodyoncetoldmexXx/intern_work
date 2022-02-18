@@ -5,7 +5,7 @@ from http import HTTPStatus
 from Server import SimpleServer
 from pathlib import Path
 from base64 import b64encode, b64decode
-from uuid import uuid4 as uid
+from string import ascii_letters, digits
 
 from Utils import guess_file_type, get_err_msg, h1, h2, h3
 from db import Users, Message, Problem, Answer, Challenge
@@ -25,6 +25,7 @@ AUTH_PATH = (
     "/delete-challenge",
 )
 CHALL_PATH = "./chall"
+ALLOW_CHARS = ascii_letters + digits + " "
 
 app = SimpleServer(host=HOST, port=PORT)
 
@@ -41,6 +42,10 @@ CSRF_token = {}
 
 def gen_csrf_token():
     return hexlify(os.urandom(64)).decode()
+
+
+def name_dangerous(name):
+    return any([c not in ALLOW_CHARS for c in name])
 
 
 def parse_user(data):
@@ -104,18 +109,24 @@ def get_challenges():
     return challenges
 
 
-def check_challenge(name):
-    if exists_challenge(name):
-        with open(Path(CHALL_PATH, name), "r") as f:
+def check_answer(file, answer):
+    if file.name == answer:
+        with open(file, "r") as f:
             content = f.read()
         return content
+    return None
 
 
-def exists_challenge(name):
-    challpath = Path(CHALL_PATH, name)
-    if challpath.exists and challpath.is_file():
-        return True
-    return False
+def exists_challenge(filename, filehash):
+    challpath = Path(CHALL_PATH)
+    filepath = Path(CHALL_PATH, filename)
+    if filepath in challpath.iterdir():
+        with open(filepath, "r") as f:
+            content = f.read()
+        h = h3(f"{filepath.name}&{content}")
+        if h == filehash:
+            return filepath
+    return None
 
 
 def save_chall(name, content):
@@ -624,13 +635,17 @@ def do_challege(request):
             if not hash:
                 args["error-msg"] = "Challenge can not be empty"
             else:
-                content = check_challenge(answer)
-                if content:
-                    args["ok-msg"] = "Correct answer"
-                    args["challenge-content"] = content
+                if name_dangerous(answer):
+                    args["error-msg"] = "Answer contain invalid character"
                 else:
-                    if exists_challenge(answer):
-                        args["error-msg"] = "Wrong answer"
+                    filepath = exists_challenge(answer, hash)
+                    if filepath:
+                        content = check_answer(filepath, answer)
+                        if content:
+                            args["ok-msg"] = "Correct answer"
+                            args["challenge-content"] = content
+                        else:
+                            args["error-msg"] = "Wrong answer"
                     else:
                         args["error-msg"] = "Challenge not found"
 
