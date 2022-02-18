@@ -211,8 +211,8 @@ class SimpleServer:
                     if end_resp:
                         return self._do_resp()
 
-                if self.header.get("Connection", "") != "close":
-                    self.hander_resp()
+                #if self.header.get("Connection", "") != "close":
+                self.hander_resp()
         finally:
             self.__clean_up()
 
