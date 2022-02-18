@@ -11,7 +11,7 @@ class Message:
     def _run(self, cmd, args=None, is_list=False):
         logging.debug(f"execute {cmd} with {args}")
         if args:
-            self.cur.execute(cmd.format(*args))
+            self.cur.execute(cmd, args)
         else:
             self.cur.execute(cmd)
         self.con.commit()
@@ -29,30 +29,28 @@ class Message:
         return self._run(cmd, is_list=True)
 
     def get_message(self, messageid):
-        cmd = "SELECT * FROM message WHERE messageid='{}'"
+        cmd = "SELECT * FROM message WHERE messageid=%s"
         return self._run(cmd, (messageid,))
 
     def get_user_message(self, userid):
-        cmd = "SELECT username, content FROM message m JOIN user u on m.fromuser=u.userid WHERE touser='{}'"
+        cmd = "SELECT username, content FROM message m JOIN user u on m.fromuser=u.userid WHERE touser=%s"
         return self._run(cmd, (userid,), is_list=True)
 
     def get_send_message(self, userid, targetid):
-        cmd = "SELECT * FROM message WHERE fromuser='{}' and touser='{}'"
+        cmd = "SELECT * FROM message WHERE fromuser=%s and touser=%s"
         return self._run(cmd, (userid, targetid), is_list=True)
 
     def insert_message(self, content, fromuser, touser):
-        cmd = (
-            "INSERT INTO message (content, fromuser, touser) VALUES ('{}', '{}', '{}')"
-        )
+        cmd = "INSERT INTO message (content, fromuser, touser) VALUES (%s, %s, %s)"
         self._run(cmd, (content, fromuser, touser))
 
     def update_message(self, messageid, content):
-        cmd = "UPDATE message SET content='{}' WHERE messageid='{}'"
+        cmd = "UPDATE message SET content=%s WHERE messageid=%s"
         self._run(cmd, (content, messageid))
         return self.get_message(messageid)
 
     def delete_message(self, messageid):
-        cmd = "DELETE FROM message WHERE messageid='{}'"
+        cmd = "DELETE FROM message WHERE messageid=%s"
         bef = self.get_message(messageid)
         self._run(cmd, (messageid,))
         aft = self.get_message(messageid)

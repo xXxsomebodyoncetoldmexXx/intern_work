@@ -10,7 +10,7 @@ class Answer:
     def _run(self, cmd, args=None, is_list=False):
         logging.debug(f"execute {cmd} with {args}")
         if args:
-            self.cur.execute(cmd.format(*args))
+            self.cur.execute(cmd, args)
         else:
             self.cur.execute(cmd)
         self.con.commit()
@@ -28,32 +28,32 @@ class Answer:
         return self._run(cmd, is_list=True)
 
     def get_answer(self, answerid):
-        cmd = "SELECT answerid, u.userid, username, p.problemid, problemname, a.content FROM answer a JOIN problem p ON a.problemid=p.problemid JOIN user u ON a.userid=u.userid WHERE answerid='{}'"
+        cmd = "SELECT answerid, u.userid, username, p.problemid, problemname, a.content FROM answer a JOIN problem p ON a.problemid=p.problemid JOIN user u ON a.userid=u.userid WHERE answerid=%s"
         return self._run(cmd, (answerid,))
 
     def get_user_answers(self, userid, problemid=None):
-        cmd = "SELECT answerid, u.userid, username, p.problemid, problemname, a.content FROM answer a JOIN problem p ON a.problemid=p.problemid JOIN user u ON a.userid=u.userid WHERE a.userid='{}'"
+        cmd = "SELECT answerid, u.userid, username, p.problemid, problemname, a.content FROM answer a JOIN problem p ON a.problemid=p.problemid JOIN user u ON a.userid=u.userid WHERE a.userid=%s"
         if problemid:
-            cmd += " and a.problemid='{}'"
+            cmd += " and a.problemid=%s"
         return self._run(
             cmd, (userid, problemid), is_list=True if not problemid else False
         )
 
     def get_problem_answers(self, problemid):
-        cmd = "SELECT * FROM answer WHERE problemid='{}'"
+        cmd = "SELECT * FROM answer WHERE problemid=%s"
         return self._run(cmd, (problemid,))
 
     def insert_answer(self, userid, problemid, content):
-        cmd = "INSERT INTO answer (userid, problemid, content) VALUES('{}', '{}', '{}')"
+        cmd = "INSERT INTO answer (userid, problemid, content) VALUES(%s, %s, %s)"
         self._run(cmd, (userid, problemid, content))
 
     def update_answer(self, answerid, problemid, content):
-        cmd = "UPDATE answer SET content='{}', problemid='{}' WHERE answerid='{}'"
+        cmd = "UPDATE answer SET content=%s, problemid=%s WHERE answerid=%s"
         self._run(cmd, (content, problemid, answerid))
         return self.get_answer(answerid)
 
     def delete_answer(self, answerid):
-        cmd = "DELETE FROM answer WHERE answerid='{}'"
+        cmd = "DELETE FROM answer WHERE answerid=%s"
         bef = self.get_answer(answerid)
         self._run(cmd, (answerid,))
         aft = self.get_answer(answerid)

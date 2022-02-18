@@ -10,7 +10,7 @@ class Problem:
     def _run(self, cmd, args=None, is_list=False):
         logging.debug(f"execute {cmd} with {args}")
         if args:
-            self.cur.execute(cmd.format(*args))
+            self.cur.execute(cmd, args)
         else:
             self.cur.execute(cmd)
         self.con.commit()
@@ -28,25 +28,25 @@ class Problem:
         return self._run(cmd, is_list=True)
 
     def get_problem(self, problemid):
-        cmd = "SELECT * FROM problem WHERE problemid='{}'"
+        cmd = "SELECT * FROM problem WHERE problemid=%s"
         return self._run(cmd, (problemid,))
 
     def get_unsolve_problems(self, userid):
         cmd = "SELECT problemid, problemname FROM problem WHERE problemid NOT IN \
-      (SELECT a.problemid FROM user u JOIN answer a ON u.userid=a.userid WHERE u.userid='{}')"
+      (SELECT a.problemid FROM user u JOIN answer a ON u.userid=a.userid WHERE u.userid=%s)"
         return self._run(cmd, (userid,), is_list=True)
 
     def insert_problem(self, problemname, content):
-        cmd = "INSERT INTO problem (problemname, content) VALUES('{}', '{}')"
+        cmd = "INSERT INTO problem (problemname, content) VALUES(%s, %s)"
         self._run(cmd, (problemname, content))
 
     def update_problem(self, problemid, problemname, content):
-        cmd = "UPDATE problem SET problemname='{}', content='{}' WHERE problemid='{}'"
+        cmd = "UPDATE problem SET problemname=%s, content=%s WHERE problemid=%s"
         self._run(cmd, (problemname, content, problemid))
         return self.get_problem(problemid)
 
     def delete_problem(self, problemid):
-        cmd = "DELETE FROM problem WHERE problemid='{}'"
+        cmd = "DELETE FROM problem WHERE problemid=%s"
         bef = self.get_problem(problemid)
         self._run(cmd, (problemid,))
         aft = self.get_problem(problemid)

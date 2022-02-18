@@ -15,7 +15,7 @@ class User:
     def _run(self, cmd, args=None, is_list=False, is_update=True):
         logging.debug(f"execute {cmd} with {args}")
         if args:
-            self.cur.execute(cmd.format(*args))
+            self.cur.execute(cmd, args)
         else:
             self.cur.execute(cmd)
         if is_update:
@@ -30,7 +30,7 @@ class User:
         self._run(cmd)
 
     def set_teacher(self, userid):
-        cmd = "UPDATE user SET is_teacher=TRUE WHERE userid='{}'"
+        cmd = "UPDATE user SET is_teacher=TRUE WHERE userid=%s"
         self._run(cmd, (userid,))
         return self.get_user(userid)
 
@@ -39,26 +39,26 @@ class User:
         return self._run(cmd, is_list=True, is_update=False)
 
     def get_user(self, userid):
-        cmd = "SELECT * FROM user WHERE userid='{}'"
+        cmd = "SELECT * FROM user WHERE userid=%s"
         return self._run(cmd, (userid,), is_update=False)
 
     def check_user(self, username, password):
-        cmd = "SELECT * FROM user WHERE username='{}' and password='{}'"
+        cmd = "SELECT * FROM user WHERE username=%s and password=%s"
         return self._run(cmd, (username, password), is_list=True, is_update=False)
 
     def insert_user(self, username, password, fullname, email, phone):
-        cmd = "INSERT INTO user (username, password, fullname, email, phone) VALUES('{}', '{}', '{}', '{}', '{}')"
+        cmd = "INSERT INTO user (username, password, fullname, email, phone) VALUES(%s, %s, %s, %s, %s)"
         self._run(cmd, (username, password, fullname, email, phone))
         return self.check_user(username, password)
 
     def update_user(self, userid, username, password, fullname, email, phone):
-        cmd = "UPDATE user SET username='{}', password='{}', fullname='{}', email='{}', phone='{}' WHERE userid='{}'"
+        cmd = "UPDATE user SET username=%s, password=%s, fullname=%s, email=%s, phone=%s WHERE userid=%s"
         self._run(cmd, (username, password, fullname, email, phone, userid))
         return self.get_user(userid)
 
     def delete_user(self, userid):
         bef = self.get_user(userid)
-        cmd = "DELETE FROM user WHERE userid='{}'"
+        cmd = "DELETE FROM user WHERE userid=%s"
         self._run(cmd, (userid,))
         aft = self.get_user(userid)
         return (bef, aft)

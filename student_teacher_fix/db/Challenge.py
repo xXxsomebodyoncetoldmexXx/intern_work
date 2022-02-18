@@ -10,7 +10,7 @@ class Challenge:
     def _run(self, cmd, args=None, is_list=False):
         logging.debug(f"execute {cmd} with {args}")
         if args:
-            self.cur.execute(cmd.format(*args))
+            self.cur.execute(cmd, args)
         else:
             self.cur.execute(cmd)
         self.con.commit()
@@ -24,11 +24,11 @@ class Challenge:
         self._run(cmd)
 
     def get_chall(self, hash):
-        cmd = "SELECT challname, hint FROM challenge WHERE hash='{}'"
+        cmd = "SELECT challname, hint FROM challenge WHERE hash=%s"
         return self._run(cmd, (hash,))
 
     def insert_chall(self, hash, name, hint):
-        cmd = "INSERT INTO challenge (hash, challname, hint) VALUES ('{}', '{}', '{}')"
+        cmd = "INSERT INTO challenge (hash, challname, hint) VALUES (%s, %s, %s)"
         self._run(cmd, (hash, name, hint))
         return self.get_chall(hash)
 
@@ -38,7 +38,7 @@ class Challenge:
 
     def delete_chall(self, hash):
         bef = self.get_chall(hash)
-        cmd = "DELETE FROM challenge WHERE hash='{}'"
+        cmd = "DELETE FROM challenge WHERE hash=%s"
         self._run(cmd, (hash,))
         aft = self.get_chall(hash)
         return (bef, aft)
