@@ -117,15 +117,20 @@ def check_answer(file, answer):
     return None
 
 
-def exists_challenge(filename, filehash):
+def check_hash(filepath, hash):
+    with open(filepath, "r") as f:
+        content = f.read()
+    h = h3(f"{filepath.name}&{content}")
+    if h == hash:
+        return True
+    return False
+
+
+def exists_challenge(filename):
     challpath = Path(CHALL_PATH)
     filepath = Path(CHALL_PATH, filename)
     if filepath in challpath.iterdir():
-        with open(filepath, "r") as f:
-            content = f.read()
-        h = h3(f"{filepath.name}&{content}")
-        if h == filehash:
-            return filepath
+        return filepath
     return None
 
 
@@ -625,6 +630,8 @@ def do_challege(request):
                 h = h3(f"{answer}&{content.decode()}")
                 if models["Challenge"].get_chall(h):
                     args["error-msg"] = "Challenge already upload"
+                elif name_dangerous(answer):
+                    args["error-msg"] = "Challenge file name contain invalid characters"
                 else:
                     save_chall(answer, content)
                     models["Challenge"].insert_chall(h, name, hint)
@@ -638,8 +645,8 @@ def do_challege(request):
                 if name_dangerous(answer):
                     args["error-msg"] = "Answer contain invalid character"
                 else:
-                    filepath = exists_challenge(answer, hash)
-                    if filepath:
+                    filepath = exists_challenge(answer)
+                    if filepath and check_hash(filepath, hash):
                         content = check_answer(filepath, answer)
                         if content:
                             args["ok-msg"] = "Correct answer"
