@@ -53,9 +53,7 @@ def read_bytes(path):
 def render(path, args):
     path = Path(PREFIX + path)
     if path.exists():
-        print("bef", args)
         args = html_safe_escape(args)
-        print("aft", args)
         if parser_list.get(path.name, ""):
             args = parser_list[path.name](args)
         data = read_file(path)

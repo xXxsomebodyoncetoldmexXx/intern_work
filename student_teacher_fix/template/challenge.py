@@ -19,8 +19,8 @@ challenge_table = """<div class="container" style="max-width: 2400px">
     """
 
 challenge_row = """<tr>
-  <form id="update-form" action="/update-challenge" method="post"></form>
-  <form id="delete-form" action="/delete-challenge" method="post"></form>
+  <form id="update-form" action="/update-challenge" method="post"><input type="hidden" name="csrf_token" value={csrf_token}></form>
+  <form id="delete-form" action="/delete-challenge" method="post"><input type="hidden" name="csrf_token" value={csrf_token}></form>
   <th scope="row">{hash}</th>
   <td><input type='text' name='challengename' placeholder={challengename} form='update-form' disabled></td>
   <td><input type='text' name='challengehint' placeholder={challengehint} form='update-form' disabled></td>
@@ -31,6 +31,7 @@ challenge_row = """<tr>
 add_form = """<div class="card">
       <div class="container">
         <form action="/challenge" method="post">
+          <input type="hidden" name="csrf_token" value={csrf_token}>
           <div class="form-group" style="margin-top:10px;">
             <input type="text" class="form-control" name="challengename" placeholder="Challenge name" />
           </div>
@@ -54,6 +55,7 @@ add_form = """<div class="card">
 answer_form = """<div class="card">
       <div class="container">
         <form action="/challenge" method="post">
+          <input type="hidden" name="csrf_token" value={csrf_token}>
           <div class="form-group" style="margin-top:10px;">
             <select class="custom-select" name="challengeid">
               <option value="" disabled selected>Select challenge to answer</option>

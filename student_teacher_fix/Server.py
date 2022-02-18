@@ -209,9 +209,12 @@ class SimpleServer:
                 for func in self.middlewares:
                     end_resp = func(self)
                     if end_resp:
+                        self.set_header("Server", self._server_version())
+                        self.set_header("Date", self._get_time())
+                        self.set_header("Connection", "close")
                         return self._do_resp()
 
-                #if self.header.get("Connection", "") != "close":
+                # if self.header.get("Connection", "") != "close":
                 self.hander_resp()
         finally:
             self.__clean_up()

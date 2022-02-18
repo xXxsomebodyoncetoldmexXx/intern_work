@@ -1,5 +1,6 @@
 import json
 import os
+from binascii import hexlify
 from http import HTTPStatus
 from Server import SimpleServer
 from pathlib import Path
@@ -34,6 +35,12 @@ models = {
     "Answer": Answer.Answer(),
     "Challenge": Challenge.Challenge(),
 }
+
+CSRF_token = {}
+
+
+def gen_csrf_token():
+    return hexlify(os.urandom(64)).decode()
 
 
 def parse_user(data):
@@ -192,6 +199,31 @@ def Authentication(request):
         return True
 
 
+@app.middleware
+def regen_csrf_token(request):
+    if (
+        request.header.get("Current-User")
+        and request.header["Current-User"]["userid"] not in CSRF_token
+    ):
+        request.redirect("/logout")
+        return True
+
+
+@app.middleware
+def csrf_check(request):
+    if (
+        request.header["Request-Type"] == "POST"
+        and request.header["File-Path"] in AUTH_PATH
+    ):
+        id = int(request.header["Cookie"].get("id", ""))
+        if id not in CSRF_token or CSRF_token[id] != request.rbody.get(
+            "csrf_token", ""
+        ):
+            request.set_resp_code(HTTPStatus.BAD_REQUEST)
+            request.body = "<h1>Invalid CSRF token</h1>"
+            return True
+
+
 @app.route("/login", methods=("GET", "POST"))
 def login(request):
     err_msg = ""
@@ -205,6 +237,9 @@ def login(request):
             hash = h2(f"{user['userid']}&{user['username']}&{user['password']}")
             request.set_cookie("id", str(user["userid"]))
             request.set_cookie("hash", hash)
+
+            # Generate csft_token
+            CSRF_token[user["userid"]] = gen_csrf_token()
             return request.redirect("/", is_post=True)
         err_msg = "Wrong username or password"
     request.body = Views.render("login.html", {"error-msg": err_msg})
@@ -213,6 +248,7 @@ def login(request):
 @app.route("/", methods=("GET", "POST"))
 def homepage(request):
     args = request.header["Current-User"]
+    args["csrf_token"] = CSRF_token[request.header["Current-User"]["userid"]]
     if args["is_teacher"]:
         args["Other-User"] = [
             parse_user(u)
@@ -313,6 +349,8 @@ def homepage(request):
 
 @app.route("/logout")
 def logout(request):
+    if request.header.get("Current-User", ""):
+        CSRF_token.pop(request.header["Current-User"]["userid"], None)
     request.set_cookie("id", "''; expires=Thu, 01 Jan 1970 00:00:00 GMT")
     request.set_cookie("hash", "''; expires=Thu, 01 Jan 1970 00:00:00 GMT")
     request.redirect("/login")
@@ -321,6 +359,7 @@ def logout(request):
 @app.route("/user", methods=("GET", "POST"))
 def check_users(request):
     args = {}
+    args["csrf_token"] = CSRF_token[request.header["Current-User"]["userid"]]
     if request.header["Params"].get("id", ""):
         args["user-info"] = models["User"].get_user(request.header["Params"]["id"])
         args["user-info"] = parse_user(args["user-info"])
@@ -407,6 +446,7 @@ def message_handle(request):
 @app.route("/problem", methods=("GET", "POST"))
 def do_problem(request):
     args = {}
+    args["csrf_token"] = CSRF_token[request.header["Current-User"]["userid"]]
     args["problem-list"] = [parse_problem(p) for p in models["Problem"].get_problems()]
     args["is_admin"] = request.header["Current-User"]["is_teacher"]
 
@@ -551,6 +591,7 @@ def do_problem(request):
 @app.route("/challenge", methods=("GET", "POST"))
 def do_challege(request):
     args = {}
+    args["csrf_token"] = CSRF_token[request.header["Current-User"]["userid"]]
     args["challenge-list"] = get_challenges()
     args["is_admin"] = request.header["Current-User"]["is_teacher"]
     if request.header["Params"].get("error", ""):

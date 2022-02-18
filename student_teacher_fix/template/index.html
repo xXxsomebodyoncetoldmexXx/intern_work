@@ -37,6 +37,7 @@
     <div class="card">
       <div class="container">
         <form action="/" method="post">
+          <input type="hidden" name="csrf_token" value={csrf_token}>
           <div class="form-group" style="margin-top:10px;">
             <select class="custom-select" name="id">
               <option value="" disabled selected>Select user to update</option>
@@ -86,6 +87,7 @@
     <div class="card">
       <div class="container">
         <form action="/" method="post">
+          <input type="hidden" name="csrf_token" value={csrf_token}>
           <h2 class="text-center">Delete user</h2>
           <div class="form-group">
             <select class="custom-select" name="delete-id">

@@ -1,22 +1,35 @@
 problem_row = """<tr>
   <th scope="row">{problemid}</th>
   <td>{problemname}</td>
-  <td><form action="/problem"><button type='submit' name='pid' value={problemid}>download</button></form></td>
-  <td><form action="/problem" method="post"><button type='submit' name='pdeleteid' value={problemid} disabled>delete</button></form></td>
+  <td><form action="/problem">
+    <input type="hidden" name="csrf_token" value={csrf_token}>
+    <button type='submit' name='pid' value={problemid}>download</button>
+  </form></td>
+  <td><form action="/problem" method="post">
+    <input type="hidden" name="csrf_token" value={csrf_token}>
+    <button type='submit' name='pdeleteid' value={problemid} disabled>delete</button>
+  </form></td>
 </tr>"""
 
 answer_row = """<tr>
   <th scope="row">{answerid}</th>
   <td>{username}</td>
   <td>{problemname}</td>
-  <td><form action="/problem"><button type='submit' name='aid' value={answerid}>download</button></form></td>
-  <td><form action="/problem" method="post"><button type='submit' name='adeleteid' value={answerid}>delete</button></form></td>
+  <td><form action="/problem">
+    <input type="hidden" name="csrf_token" value={csrf_token}>
+    <button type='submit' name='aid' value={answerid}>download</button>
+  </form></td>
+  <td><form action="/problem" method="post">
+    <input type="hidden" name="csrf_token" value={csrf_token}>
+    <button type='submit' name='adeleteid' value={answerid}>delete</button>
+  </form></td>
 </tr>"""
 
 problem_form = """<hr />
     <div class="card">
       <div class="container">
         <form action="/problem" method="post">
+          <input type="hidden" name="csrf_token" value={csrf_token}>
           <div class="form-group" style="margin-top:10px;">
             <select class="custom-select" name="problemid">
               <option value="" disabled selected>Select problem to update or add new problem</option>
@@ -46,6 +59,7 @@ answer_form = """<hr />
     <div class="card">
       <div class="container">
         <form action="/problem" method="post">
+          <input type="hidden" name="csrf_token" value={csrf_token}>
           <div class="form-group" style="margin-top:10px;">
             <select class="custom-select" name="answerid">
               <option value="" disabled selected>Select answer to update or add new answer</option>

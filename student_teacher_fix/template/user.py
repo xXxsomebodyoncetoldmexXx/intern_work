@@ -2,6 +2,7 @@ form = """<hr />
     <div class="card">
       <div class="container">
         <form action="/user" method="post">
+          <input type="hidden" name="csrf_token" value={csrf_token}>
           <div class="form-group" style="margin-top:10px;">
             <select class="custom-select" name="messageid">
               <option value="" disabled selected>Select message to update or add new message</option>
@@ -97,6 +98,7 @@ def parse_options(options):
         ] = f"""<hr />
     <div class="container" style="max-width: 2400px">
       <form action="/user" method="post">
+        <input type="hidden" name="csrf_token" value={options["csrf_token"]}>
         <input type='hidden' name='id' value={options["user-info"]["userid"]} />
         <h3>Message send to user {options["user-info"]["username"]}</h3>
         <table class="table">
