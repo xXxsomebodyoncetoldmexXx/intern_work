@@ -1,6 +1,14 @@
 import secrets
 
-from flask import Flask, request, redirect, url_for, render_template_string, make_response, flash
+from flask import (
+    Flask,
+    request,
+    redirect,
+    url_for,
+    render_template_string,
+    make_response,
+    flash,
+)
 from base64 import b64decode, b64encode
 from db import User
 
@@ -36,62 +44,62 @@ info_page = """
 
 
 def add_user(username, password, fullname, phone, email):
-  password = b64encode(password.encode()).decode()
-  db.insert_user(username, password, fullname, phone, email)
+    password = b64encode(password.encode()).decode()
+    db.insert_user(username, password, fullname, phone, email)
 
 
 def parse_user(data):
-  field = ["id", "username", "password", "fullname", "phone", "email"]
-  return dict(zip(field, data))
+    field = ["id", "username", "password", "fullname", "phone", "email"]
+    return dict(zip(field, data))
 
 
 @app.route("/login", methods=["GET", "POST"])
 def login():
-  error = None
-  if request.method == "POST":
-    username = request.form["username"]
-    password = request.form["password"]
-    user = db.check_user(username)
-    if not user:
-      error = "User not found"
-    else:
-      user = parse_user(user)
-      user["password"] = b64decode(user["password"]).decode()
-      if user["password"] != password:
-        if user["password"].startswith(password):
-          error = "Try again"
+    error = None
+    if request.method == "POST":
+        username = request.form["username"]
+        password = request.form["password"]
+        user = db.check_user(username)
+        if not user:
+            error = "User not found"
         else:
-          error = "Wrong password"
-      else:
-        resp = make_response(redirect(url_for("homepage", id=user["id"])))
-        resp.set_cookie("id", str(user["id"]))
-        return resp
-  return render_template_string(form, error=error)
+            user = parse_user(user)
+            user["password"] = b64decode(user["password"]).decode()
+            if user["password"] != password:
+                if user["password"].startswith(password):
+                    error = "Try again"
+                else:
+                    error = "Wrong password"
+            else:
+                resp = make_response(redirect(url_for("homepage", id=user["id"])))
+                resp.set_cookie("id", str(user["id"]))
+                return resp
+    return render_template_string(form, error=error)
 
 
 @app.route("/", defaults={"id": -1})
 @app.route("/<int:id>")
 def homepage(id):
-  if not request.cookies.get("id"):
-    return redirect(url_for("login"))
-  user_info = db.get_user(id)
-  if not user_info:
-    return "<h1>User not found</h1>", 404
-  user_info = parse_user(user_info)
-  return render_template_string(info_page, **user_info)
+    if not request.cookies.get("id"):
+        return redirect(url_for("login"))
+    user_info = db.get_user(id)
+    if not user_info:
+        return "<h1>User not found</h1>", 404
+    user_info = parse_user(user_info)
+    return render_template_string(info_page, **user_info)
 
 
 @app.route("/logout", methods=["POST"])
 def logout():
-  resp = make_response(redirect(url_for("login")))
-  resp.set_cookie("id", "", expires=0)
-  return resp
+    resp = make_response(redirect(url_for("login")))
+    resp.set_cookie("id", "", expires=0)
+    return resp
 
 
 if __name__ == "__main__":
-  # uncomment then run ONCE then comment
-  # add_user("john", "1234", "johnson baby", 12341234, "john@gmail.com")
-  # add_user("steve", "password", "steven univer", 55435345, "steve@hotmail.com")
-  # add_user("hana", "1111", "Hasta La Vista Baby", 88889999, "hana@yahoo.com")
-  # add_user("cow", "798789", "cowsay", 12341234, "cow@gmail.com")
-  app.run("0.0.0.0", port=8888, debug=True)
+    # uncomment then run ONCE then comment
+    # add_user("john", "1234", "johnson baby", 12341234, "john@gmail.com")
+    # add_user("steve", "password", "steven univer", 55435345, "steve@hotmail.com")
+    # add_user("hana", "1111", "Hasta La Vista Baby", 88889999, "hana@yahoo.com")
+    # add_user("cow", "798789", "cowsay", 12341234, "cow@gmail.com")
+    app.run("0.0.0.0", port=8888, debug=True)
